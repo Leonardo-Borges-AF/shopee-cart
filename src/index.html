@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carrinho Shopee</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #f4f4f4;
+        color: #333;
+      }
+      header {
+        background: #ff5722;
+        color: #fff;
+        padding: 1rem;
+        text-align: center;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 1rem;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+      h2 {
+        margin-top: 0;
+      }
+      .items {
+        display: grid;
+        gap: 0.5rem;
+      }
+      .item {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto auto;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #ddd;
+      }
+      .item:last-child {
+        border: none;
+      }
+      button {
+        padding: 0.3rem 0.6rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      .btn-add {
+        background: #4caf50;
+        color: #fff;
+      }
+      .btn-remove {
+        background: #f44336;
+        color: #fff;
+      }
+      .btn-move {
+        background: #2196f3;
+        color: #fff;
+      }
+      .totals {
+        text-align: right;
+        margin-top: 1rem;
+        font-weight: bold;
+      }
+      .catalog {
+        margin-top: 2rem;
+      }
+      .catalog .item {
+        grid-template-columns: 1fr auto auto;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🛒 Carrinho Shopee</h1>
+    </header>
+
+    <div class="container">
+      <h2>Carrinho</h2>
+      <div id="cart" class="items"></div>
+      <div class="totals">Total: <span id="cart-total">R$0,00</span></div>
+    </div>
+
+    <div class="container">
+      <h2>Wishlist</h2>
+      <div id="wishlist" class="items"></div>
+      <div class="totals">Total: <span id="wishlist-total">R$0,00</span></div>
+    </div>
+
+    <div class="container catalog">
+      <h2>Catálogo</h2>
+      <div id="catalog" class="items"></div>
+    </div>
+
+    <script>
+      // Helpers
+      const format = (n) =>
+        n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+      function makeItem(name, price, quantity = 1) {
+        return { name, price, quantity };
+      }
+
+      function calculateTotal(list) {
+        return list.reduce((acc, it) => acc + it.price * it.quantity, 0);
+      }
+
+      function renderList(list, el, totalEl, actions) {
+        el.innerHTML = "";
+        list.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+          <div>${item.name}</div>
+          <div>${item.quantity}</div>
+          <div>${format(item.price)}</div>
+          <div>${format(item.price * item.quantity)}</div>
+        `;
+          const btns = document.createElement("div");
+
+          const btnAdd = document.createElement("button");
+          btnAdd.textContent = "+";
+          btnAdd.className = "btn-add";
+          btnAdd.onclick = () => actions.add(item);
+          btns.appendChild(btnAdd);
+
+          const btnRemove = document.createElement("button");
+          btnRemove.textContent = "-";
+          btnRemove.className = "btn-remove";
+          btnRemove.onclick = () => actions.remove(item);
+          btns.appendChild(btnRemove);
+
+          const btnDelete = document.createElement("button");
+          btnDelete.textContent = "🗑️";
+          btnDelete.className = "btn-remove";
+          btnDelete.onclick = () => actions.delete(item);
+          btns.appendChild(btnDelete);
+
+          const btnMove = document.createElement("button");
+          btnMove.textContent = actions.moveLabel;
+          btnMove.className = "btn-move";
+          btnMove.onclick = () => actions.move(item);
+          btns.appendChild(btnMove);
+
+          div.appendChild(btns);
+          el.appendChild(div);
+        });
+        totalEl.textContent = format(calculateTotal(list));
+      }
+
+      // Estado
+      let cart = [makeItem("mouse", 10, 2), makeItem("hotwheels", 7.99, 3)];
+      let wishlist = [
+        makeItem("teclado", 63.72, 6),
+        makeItem("cadeira", 200, 5),
+        makeItem("mesa", 112.5, 2),
+        makeItem("monitor", 199.99, 10),
+      ];
+      const catalogItems = [
+        makeItem("mouse", 10),
+        makeItem("hotwheels", 7.99),
+        makeItem("teclado", 63.72),
+        makeItem("cadeira", 200),
+        makeItem("mesa", 112.5),
+        makeItem("monitor", 199.99),
+      ];
+
+      // Renderização
+      const cartEl = document.getElementById("cart");
+      const cartTotalEl = document.getElementById("cart-total");
+      const wishlistEl = document.getElementById("wishlist");
+      const wishlistTotalEl = document.getElementById("wishlist-total");
+      const catalogEl = document.getElementById("catalog");
+
+      function render() {
+        renderList(cart, cartEl, cartTotalEl, {
+          add: (it) => {
+            it.quantity++;
+            render();
+          },
+          remove: (it) => {
+            if (it.quantity > 1) it.quantity--;
+            else cart = cart.filter((x) => x !== it);
+            render();
+          },
+          delete: (it) => {
+            cart = cart.filter((x) => x !== it);
+            render();
+          },
+          move: (it) => {
+            wishlist.push(it);
+            cart = cart.filter((x) => x !== it);
+            render();
+          },
+          moveLabel: "→ WL",
+        });
+        renderList(wishlist, wishlistEl, wishlistTotalEl, {
+          add: (it) => {
+            it.quantity++;
+            render();
+          },
+          remove: (it) => {
+            if (it.quantity > 1) it.quantity--;
+            else wishlist = wishlist.filter((x) => x !== it);
+            render();
+          },
+          delete: (it) => {
+            wishlist = wishlist.filter((x) => x !== it);
+            render();
+          },
+          move: (it) => {
+            cart.push(it);
+            wishlist = wishlist.filter((x) => x !== it);
+            render();
+          },
+          moveLabel: "→ Cart",
+        });
+
+        catalogEl.innerHTML = "";
+        catalogItems.forEach((p) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+          <div>${p.name}</div>
+          <div>${format(p.price)}</div>
+        `;
+          const btns = document.createElement("div");
+
+          const btnCart = document.createElement("button");
+          btnCart.textContent = "Add Carrinho";
+          btnCart.className = "btn-add";
+          btnCart.onclick = () => {
+            cart.push(makeItem(p.name, p.price));
+            render();
+          };
+          btns.appendChild(btnCart);
+
+          const btnWish = document.createElement("button");
+          btnWish.textContent = "Add Wishlist";
+          btnWish.className = "btn-move";
+          btnWish.onclick = () => {
+            wishlist.push(makeItem(p.name, p.price));
+            render();
+          };
+          btns.appendChild(btnWish);
+
+          div.appendChild(btns);
+          catalogEl.appendChild(div);
+        });
+      }
+
+      render();
+    </script>
+  </body>
+</html>
